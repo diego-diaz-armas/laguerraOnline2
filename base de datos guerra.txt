@@ -31,13 +31,17 @@ CREATE TABLE Partida (
     fecha DATE NOT NULL,
     estado ENUM('suspendido', 'finalizado') NOT NULL
 );
+
+
 CREATE TABLE Mano (
-    IDMano INT PRIMARY KEY AUTO_INCREMENT,   
-    IDUsuario INT,                           
-    IDPartida INT,                           
-    Resultado ENUM('ganador', 'perdedor'),  
-    FOREIGN KEY (IDUsuario) REFERENCES Usuario(IDUsuario),
-    FOREIGN KEY (IDPartida) REFERENCES Partida(IDPartida)
+    IDMano INT AUTO_INCREMENT PRIMARY KEY,
+    IDPartida INT NOT NULL,
+    NumeroMano INT NOT NULL,
+    IDGanador INT NOT NULL,
+    IDPerdedor INT NOT NULL,
+    FOREIGN KEY (IDPartida) REFERENCES Partida(IDPartida),
+    FOREIGN KEY (IDGanador) REFERENCES Usuario(IDUsuario),
+    FOREIGN KEY (IDPerdedor) REFERENCES Usuario(IDUsuario)
 );
 
 
@@ -121,17 +125,22 @@ INSERT INTO jugador (IDUsuario) VALUES (2);
 -- Procedimiento Mano
 DELIMITER //
 CREATE PROCEDURE insertarMano(
-IN m_Jugador INT,
-IN m_Partida INT,
-OUT m_IdMano INT
+    IN m_Jugador INT,
+    IN m_Partida INT,
+    IN m_Resultado ENUM('ganador', 'perdedor'),
+    OUT m_IdMano INT
 )
 BEGIN
-DECLARE m_IdMano INT;
-INSERT INTO mano(IDJugador, IDPartida)
-VALUES(m_Jugador, m_Partida);
-SET m_IdMano= LAST_INSERT_ID();
+    -- Insertar los datos en la tabla Mano
+    INSERT INTO Mano (IDUsuario, IDPartida, Resultado)
+    VALUES (m_Jugador, m_Partida, m_Resultado);
+
+    -- Obtener el último ID auto-generado
+    SET m_IdMano = LAST_INSERT_ID();
 END//
 DELIMITER ;
+
+
 
 -- Procedimiento Tabla Compone
 
@@ -211,4 +220,28 @@ CREATE TABLE Mano (
     FOREIGN KEY (IDPartida) REFERENCES Partida(IDPartida),
     FOREIGN KEY (IDGanador) REFERENCES Usuario(IDUsuario),
     FOREIGN KEY (IDPerdedor) REFERENCES Usuario(IDUsuario)
+);
+
+procedimiento de mano antiguo-------
+DELIMITER //
+CREATE PROCEDURE insertarMano(
+IN m_Jugador INT,
+IN m_Partida INT,
+OUT m_IdMano INT
+)
+BEGIN
+DECLARE m_IdMano INT;
+INSERT INTO mano(IDJugador, IDPartida)
+VALUES(m_Jugador, m_Partida);
+SET m_IdMano= LAST_INSERT_ID();
+END//
+DELIMITER ;
+
+CREATE TABLE Mano (
+    IDMano INT PRIMARY KEY AUTO_INCREMENT,   
+    IDUsuario INT,                           
+    IDPartida INT,                           
+    Resultado ENUM('ganador', 'perdedor'),  
+    FOREIGN KEY (IDUsuario) REFERENCES Usuario(IDUsuario),
+    FOREIGN KEY (IDPartida) REFERENCES Partida(IDPartida)
 );
