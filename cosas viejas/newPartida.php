@@ -2,6 +2,7 @@
 require_once('Jugador.php');
 require_once('Carta.php');
 require_once('Mazo.php');
+require_once('./Conexion.php');
 
 class Partida {
     private Jugador $jugadorHumano;
@@ -177,8 +178,4 @@ class Partida {
         // Restaurar el ID del usuario en la sesión para asegurar que sigue autenticado
         $_SESSION['IDUsuario'] = $idUsuario;
     }
-    
-    
-    
-
 }

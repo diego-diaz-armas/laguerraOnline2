@@ -198,6 +198,7 @@ class Partida {
 
     public function finalizarPartida(): void {
         $this->actualizarEstadoPartida('finalizado');
+        unset($_SESSION['idPartida']);
     }
 
     public function batallar(): string {
@@ -297,21 +298,22 @@ class Partida {
 
     public function registrarMano(string $resultado): void {
         $conexion = Conexion::getInstancia()->getConexion();
-        $count=0;
+        $count = 0;
+        
         // Verificar si el ID del usuario está en la sesión
         if (!isset($_SESSION['IDUsuario'])) {
             die("Error: El ID del usuario no está configurado en la sesión.");
         }
         $idJugadorHumano = $_SESSION['IDUsuario'];
         $idJugadorPC = 2; // ID fijo para el jugador PC
-    
+        
         // Verificar si el ID de la partida está en la sesión
         if (!isset($_SESSION['idPartida'])) {
             die("Error: El ID de la partida no está configurado en la sesión.");
         }
         $idPartida = $_SESSION['idPartida'];
-    
-        // Verificar que la partida existe (opcional)
+        
+        // Verificar que la partida existe
         $sql = "SELECT COUNT(*) FROM Partida WHERE IDPartida = ?";
         $stmt = $conexion->prepare($sql);
         $stmt->bind_param("i", $idPartida);
@@ -319,30 +321,50 @@ class Partida {
         $stmt->bind_result($count);
         $stmt->fetch();
         $stmt->close();
-    
+        
         if ($count == 0) {
             die("Error: El ID de la partida no existe.");
         }
-    
-        // Insertar las manos
+        
+        // Verificar si ya se han registrado los resultados para esa partida
+        $sql = "SELECT COUNT(*) FROM Mano WHERE IDPartida = ?";
+        $stmt = $conexion->prepare($sql);
+        $stmt->bind_param("i", $idPartida);
+        $stmt->execute();
+        $stmt->bind_result($count);
+        $stmt->fetch();
+        $stmt->close();
+        
+        // Si ya hay resultados registrados, no hacer nada
+        if ($count > 0) {
+            die("Error: Los resultados de esta partida ya han sido registrados.");
+        }
+        
+        // Insertar los resultados de las manos: uno para el jugador humano y otro para el jugador PC
         $sql = "INSERT INTO Mano (IDUsuario, IDPartida, Resultado) VALUES (?, ?, ?)";
         $stmt = $conexion->prepare($sql);
-    
-        $resultadoHumano = ($resultado === 'ganador') ? 'ganador' : 'perdedor';
-        //$resultadoPC = ($resultado === 'ganador') ? 'perdedor' : 'ganador';
-    
+        
+        // Determinar el resultado de cada jugador
+        if ($resultado === 'ganador') {
+            $resultadoHumano = 'ganador';
+            $resultadoPC = 'perdedor';
+        } else {
+            $resultadoHumano = 'perdedor';
+            $resultadoPC = 'ganador';
+        }
+        
         // Registrar el resultado del jugador humano
         $stmt->bind_param("iis", $idJugadorHumano, $idPartida, $resultadoHumano);
         if (!$stmt->execute()) {
             die("Error al registrar el resultado del jugador humano: " . $stmt->error);
         }
-    
-        /* Registrar el resultado del jugador PC
+        
+        // Registrar el resultado del jugador PC
         $stmt->bind_param("iis", $idJugadorPC, $idPartida, $resultadoPC);
         if (!$stmt->execute()) {
             die("Error al registrar el resultado del jugador PC: " . $stmt->error);
-        }*/
-    
+        }
+        
         $stmt->close();
     }
     
